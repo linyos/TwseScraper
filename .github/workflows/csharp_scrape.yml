@@ -1,0 +1,36 @@
+name: Daily Stock Scraper (C#)
+
+on:
+  schedule:
+    - cron: '0 6 * * 1-5' # 每個工作日的上午 9 點執行
+  workflow_dispatch:
+
+jobs:
+  build-and-scrape:
+    runs-on: ubuntu-latest
+
+    # 給予寫入 Repository 的權限
+    permissions:
+      contents: write
+
+    steps:
+    # 1. 下載程式碼
+    - name: Checkout source
+      uses: actions/checkout@v4
+
+    # 2. 設定 .NET 8 環境
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+    # 3. 執行 C# 專案
+    - name: Run Scraper
+      run: dotnet run
+
+    # 4. Commit 並 Push 結果
+    - name: Commit and Push
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add data/
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Auto: Update Stock Price" && git push)
