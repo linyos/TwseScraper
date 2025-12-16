@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台積電股價監控 | TWSE Scraper</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 台積電股價監控</h1>
+            <p>即時追蹤台積電 (2330) 股價資料</p>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>最新價格</h3>
+                <span class="price" id="latestPrice">載入中...</span>
+                <small id="latestDate"></small>
+            </div>
+            <div class="stat-card">
+                <h3>資料筆數</h3>
+                <span class="count" id="dataCount">載入中...</span>
+                <small>總收集筆數</small>
+            </div>
+            <div class="stat-card">
+                <h3>價格趨勢</h3>
+                <span class="trend" id="priceTrend">載入中...</span>
+                <small id="trendDesc"></small>
+            </div>
+            <div class="stat-card">
+                <h3>最後更新</h3>
+                <span class="update-time" id="lastUpdate">載入中...</span>
+                <small>資料更新時間</small>
+            </div>
+        </div>
+
+        <div class="chart-section">
+            <h2>📈 股價走勢圖</h2>
+            <div class="chart-container">
+                <canvas id="priceChart"></canvas>
+            </div>
+        </div>
+
+        <div class="data-section">
+            <h2>📊 詳細資料</h2>
+            <div class="controls">
+                <select id="fileSelector">
+                    <option value="">選擇資料檔案...</option>
+                </select>
+                <button id="refreshBtn">🔄 重新整理</button>
+            </div>
+            <div class="table-container">
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>日期</th>
+                            <th>股票代碼</th>
+                            <th>收盤價</th>
+                            <th>變化</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td colspan="4" class="loading">載入中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <footer>
+            <p>🤖 由 TwseScraper 自動收集資料 | 
+               📅 更新時間: <span id="footerUpdate"></span> |
+               📊 資料來源: <a href="https://openapi.twse.com.tw/" target="_blank">台灣證券交易所</a>
+            </p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
