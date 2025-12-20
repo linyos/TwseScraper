@@ -99,6 +99,9 @@ using TwseScraper.Model;
             await File.WriteAllTextAsync(fullPath, jsonString);
             Console.WriteLine($"資料已新增至檔案: {currentFileName}");
             Console.WriteLine($"目前檔案大小: {new FileInfo(fullPath).Length / (1024 * 1024):F2} MB");
+            
+            // 12. 更新檔案清單
+            UpdateFilesManifest(outputDir, baseFileName);
         }
         else
         {
@@ -161,4 +164,26 @@ static string GetNextFileName(string directory, string baseFileName)
     }
     
     return $"{baseFileName}_{(maxNumber + 1):D3}.json";
+}
+
+// 更新檔案清單 (用於網頁讀取)
+static void UpdateFilesManifest(string directory, string baseFileName)
+{
+    try
+    {
+        var files = Directory.GetFiles(directory, $"{baseFileName}_*.json")
+                            .Select(Path.GetFileName)
+                            .OrderBy(f => f)
+                            .ToList();
+        
+        var manifest = new { files = files };
+        string manifestPath = Path.Combine(directory, "files.json");
+        string manifestJson = JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(manifestPath, manifestJson);
+        Console.WriteLine($"已更新檔案清單: files.json (共 {files.Count} 個檔案)");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"警告: 無法更新 files.json - {ex.Message}");
+    }
 }
