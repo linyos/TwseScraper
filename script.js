@@ -11,7 +11,6 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializePage() {
     loadAvailableFiles();
     setupEventListeners();
-    loadDefaultData();
 }
 
 // 設定事件監聽器
@@ -29,12 +28,12 @@ async function loadAvailableFiles() {
             // 簡單解析目錄列表 (這在實際 GitHub Pages 可能需要調整)
             const files = parseDirectoryListing(text);
             populateFileSelector(files);
+        } else {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
     } catch (error) {
-        console.log('無法自動載入檔案列表，使用預設檔案');
-        // 使用預設檔案名稱
-        const defaultFiles = ['stock_2330_001.json'];
-        populateFileSelector(defaultFiles);
+        console.error('無法載入檔案列表:', error);
+        showError('無法存取 data/ 目錄');
     }
 }
 
@@ -53,6 +52,16 @@ function parseDirectoryListing(html) {
 function populateFileSelector(files) {
     const selector = document.getElementById('fileSelector');
     selector.innerHTML = '<option value="">選擇資料檔案...</option>';
+    
+    if (files.length === 0) {
+        const option = document.createElement('option');
+        option.value = "";
+        option.textContent = "無可用的資料檔案";
+        option.disabled = true;
+        selector.appendChild(option);
+        showError('data/ 目錄中沒有找到股票資料檔案');
+        return;
+    }
     
     files.forEach(file => {
         const option = document.createElement('option');
@@ -101,41 +110,9 @@ async function loadDataFromFile(fileName) {
     }
 }
 
-// 載入預設資料 (示範用)
-function loadDefaultData() {
-    // 如果無法載入檔案，使用示範資料
-    setTimeout(() => {
-        if (allData.length === 0) {
-            allData = generateSampleData();
-            updateStatistics();
-            updateChart();
-            updateTable();
-        }
-    }, 2000);
-}
 
-// 生成示範資料
-function generateSampleData() {
-    const sampleData = [];
-    const basePrice = 1450;
-    const today = new Date();
-    
-    for (let i = 29; i >= 0; i--) {
-        const date = new Date(today);
-        date.setDate(date.getDate() - i);
-        
-        const variation = (Math.random() - 0.5) * 100;
-        const price = (basePrice + variation * (30 - i) / 30).toFixed(2);
-        
-        sampleData.push({
-            Date: date.toISOString().split('T')[0],
-            StockNo: '2330',
-            Price: price
-        });
-    }
-    
-    return sampleData;
-}
+
+
 
 // 更新統計資料
 function updateStatistics() {
