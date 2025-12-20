@@ -22,30 +22,17 @@ function setupEventListeners() {
 // 載入可用的檔案列表
 async function loadAvailableFiles() {
     try {
-        const response = await fetch('./data/');
-        if (response.ok) {
-            const text = await response.text();
-            // 簡單解析目錄列表 (這在實際 GitHub Pages 可能需要調整)
-            const files = parseDirectoryListing(text);
-            populateFileSelector(files);
-        } else {
+        const response = await fetch('./data/files.json');
+        if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
+        const manifest = await response.json();
+        const files = manifest.files || [];
+        populateFileSelector(files);
     } catch (error) {
         console.error('無法載入檔案列表:', error);
-        showError('無法存取 data/ 目錄');
+        showError('無法存取 data/files.json 清單檔案');
     }
-}
-
-// 解析目錄列表 (簡化版本)
-function parseDirectoryListing(html) {
-    const files = [];
-    const regex = /stock_2330_\d{3}\.json/g;
-    let match;
-    while ((match = regex.exec(html)) !== null) {
-        files.push(match[0]);
-    }
-    return files.sort();
 }
 
 // 填充檔案選擇器
@@ -165,6 +152,12 @@ function updateStatistics() {
 
 // 更新圖表
 function updateChart() {
+    // 檢查 Chart.js 是否已載入
+    if (typeof Chart === 'undefined') {
+        console.warn('Chart.js 尚未載入，跳過圖表更新');
+        return;
+    }
+    
     const ctx = document.getElementById('priceChart').getContext('2d');
     
     if (chart) {
