@@ -5,6 +5,7 @@ let chart = null;
 // DOM 載入完成後執行
 document.addEventListener('DOMContentLoaded', function() {
     initializePage();
+    addEnhancedEffects();
 });
 
 // 初始化頁面
@@ -17,6 +18,56 @@ function initializePage() {
 function setupEventListeners() {
     document.getElementById('fileSelector').addEventListener('change', handleFileChange);
     document.getElementById('refreshBtn').addEventListener('click', refreshData);
+}
+
+// 添加增強視覺效果
+function addEnhancedEffects() {
+    // 添加卡片進入動畫
+    const cards = document.querySelectorAll('.stat-card, .chart-section, .data-section');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, { threshold: 0.1 });
+
+    cards.forEach(card => observer.observe(card));
+}
+
+// 數字動畫效果
+function animateNumber(element, targetValue, duration = 1000, isPrice = false) {
+    const startValue = parseFloat(element.textContent.replace(/[^0-9.-]/g, '')) || 0;
+    const difference = targetValue - startValue;
+    const startTime = performance.now();
+    
+    function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // 使用緩動函數
+        const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+        const currentValue = startValue + (difference * easeOutQuart);
+        
+        if (isPrice) {
+            element.textContent = `$${currentValue.toFixed(2)}`;
+        } else {
+            element.textContent = Math.floor(currentValue).toLocaleString();
+        }
+        
+        if (progress < 1) {
+            requestAnimationFrame(update);
+        } else {
+            if (isPrice) {
+                element.textContent = `$${targetValue.toFixed(2)}`;
+            } else {
+                element.textContent = targetValue.toLocaleString();
+            }
+        }
+    }
+    
+    requestAnimationFrame(update);
 }
 
 // 載入可用的檔案列表
@@ -108,12 +159,15 @@ function updateStatistics() {
     const latest = allData[allData.length - 1];
     const previous = allData.length > 1 ? allData[allData.length - 2] : null;
     
-    // 最新價格
-    document.getElementById('latestPrice').textContent = `$${latest.Price}`;
+    // 最新價格（使用動畫）
+    const priceElement = document.getElementById('latestPrice');
+    const targetPrice = parseFloat(latest.Price);
+    animateNumber(priceElement, targetPrice, 800, true);
     document.getElementById('latestDate').textContent = latest.Date;
     
-    // 資料筆數
-    document.getElementById('dataCount').textContent = allData.length.toLocaleString();
+    // 資料筆數（使用動畫）
+    const countElement = document.getElementById('dataCount');
+    animateNumber(countElement, allData.length, 800, false);
     
     // 價格趨勢
     if (previous) {
@@ -145,7 +199,15 @@ function updateStatistics() {
     
     // 最後更新時間
     const now = new Date();
-    const updateTime = now.toLocaleString('zh-TW');
+    const updateTime = now.toLocaleString('zh-TW', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    });
     document.getElementById('lastUpdate').textContent = updateTime;
     document.getElementById('footerUpdate').textContent = updateTime;
 }
@@ -167,23 +229,31 @@ function updateChart() {
     const labels = allData.map(item => item.Date);
     const prices = allData.map(item => parseFloat(item.Price));
     
+    // 創建漸層
+    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(0, 128, 255, 0.3)');
+    gradient.addColorStop(1, 'rgba(0, 128, 255, 0.05)');
+    
     chart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
             datasets: [{
-                label: '台積電股價 (TWD)',
+                label: 'TSMC 2330 股價 (TWD)',
                 data: prices,
-                borderColor: '#2196F3',
-                backgroundColor: 'rgba(33, 150, 243, 0.1)',
-                borderWidth: 3,
+                borderColor: '#00f5ff',
+                backgroundColor: gradient,
+                borderWidth: 2,
                 fill: true,
                 tension: 0.4,
-                pointBackgroundColor: '#2196F3',
-                pointBorderColor: '#ffffff',
+                pointBackgroundColor: '#00f5ff',
+                pointBorderColor: '#0a0e27',
                 pointBorderWidth: 2,
-                pointRadius: 5,
-                pointHoverRadius: 8
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                pointHoverBackgroundColor: '#00f5ff',
+                pointHoverBorderColor: '#ffffff',
+                pointHoverBorderWidth: 2
             }]
         },
         options: {
@@ -191,16 +261,43 @@ function updateChart() {
             maintainAspectRatio: false,
             plugins: {
                 title: {
-                    display: true,
-                    text: '台積電股價走勢',
-                    font: {
-                        size: 16,
-                        weight: 'bold'
-                    }
+                    display: false
                 },
                 legend: {
                     display: true,
-                    position: 'top'
+                    position: 'top',
+                    labels: {
+                        color: '#8b92a7',
+                        font: {
+                            family: "'Outfit', sans-serif",
+                            size: 12
+                        },
+                        padding: 15,
+                        usePointStyle: true,
+                        pointStyle: 'circle'
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(26, 31, 58, 0.95)',
+                    titleColor: '#00f5ff',
+                    bodyColor: '#e0e6ed',
+                    borderColor: '#00f5ff',
+                    borderWidth: 1,
+                    padding: 12,
+                    displayColors: false,
+                    titleFont: {
+                        family: "'JetBrains Mono', monospace",
+                        size: 13
+                    },
+                    bodyFont: {
+                        family: "'JetBrains Mono', monospace",
+                        size: 14
+                    },
+                    callbacks: {
+                        label: function(context) {
+                            return `股價: $${context.parsed.y.toFixed(2)}`;
+                        }
+                    }
                 }
             },
             scales: {
@@ -208,20 +305,59 @@ function updateChart() {
                     display: true,
                     title: {
                         display: true,
-                        text: '日期'
+                        text: '日期',
+                        color: '#8b92a7',
+                        font: {
+                            family: "'Outfit', sans-serif",
+                            size: 11
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 245, 255, 0.1)',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        color: '#8b92a7',
+                        font: {
+                            family: "'JetBrains Mono', monospace",
+                            size: 10
+                        }
                     }
                 },
                 y: {
                     display: true,
                     title: {
                         display: true,
-                        text: '股價 (TWD)'
+                        text: '股價 (TWD)',
+                        color: '#8b92a7',
+                        font: {
+                            family: "'Outfit', sans-serif",
+                            size: 11
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 245, 255, 0.1)',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        color: '#8b92a7',
+                        font: {
+                            family: "'JetBrains Mono', monospace",
+                            size: 10
+                        },
+                        callback: function(value) {
+                            return '$' + value.toFixed(0);
+                        }
                     }
                 }
             },
             interaction: {
                 intersect: false,
                 mode: 'index'
+            },
+            animation: {
+                duration: 1500,
+                easing: 'easeInOutQuart'
             }
         }
     });
@@ -243,6 +379,15 @@ function updateTable() {
     reversedData.forEach((item, index) => {
         const row = document.createElement('tr');
         
+        // 添加進入動畫
+        row.style.opacity = '0';
+        row.style.transform = 'translateX(-20px)';
+        setTimeout(() => {
+            row.style.transition = 'all 0.3s ease';
+            row.style.opacity = '1';
+            row.style.transform = 'translateX(0)';
+        }, index * 30); // 階梯式動畫
+        
         // 計算價格變化
         let changeCell = '-';
         if (index < reversedData.length - 1) {
@@ -254,11 +399,12 @@ function updateTable() {
                 const changePercent = ((change / previous) * 100).toFixed(2);
                 const changeClass = change > 0 ? 'price-up' : 'price-down';
                 const changeSymbol = change > 0 ? '+' : '';
+                const changeIcon = change > 0 ? '▲' : '▼';
                 changeCell = `<span class="price-change ${changeClass}">
-                    ${changeSymbol}${change.toFixed(2)} (${changeSymbol}${changePercent}%)
+                    ${changeIcon} ${changeSymbol}${change.toFixed(2)} (${changeSymbol}${changePercent}%)
                 </span>`;
             } else {
-                changeCell = '<span class="price-change price-neutral">0.00 (0.00%)</span>';
+                changeCell = '<span class="price-change price-neutral">● 0.00 (0.00%)</span>';
             }
         }
         
@@ -286,13 +432,16 @@ function refreshData() {
 // 顯示載入狀態
 function showLoading(show) {
     const elements = [
-        'latestPrice', 'dataCount', 'priceTrend', 'lastUpdate'
+        { id: 'latestPrice', loading: '載入中...' },
+        { id: 'dataCount', loading: '載入中...' },
+        { id: 'priceTrend', loading: '載入中...' },
+        { id: 'lastUpdate', loading: '載入中...' }
     ];
     
-    elements.forEach(id => {
-        const element = document.getElementById(id);
+    elements.forEach(item => {
+        const element = document.getElementById(item.id);
         if (show) {
-            element.textContent = '載入中...';
+            element.textContent = item.loading;
             element.classList.add('loading-spinner');
         } else {
             element.classList.remove('loading-spinner');
@@ -301,7 +450,7 @@ function showLoading(show) {
     
     if (show) {
         document.getElementById('tableBody').innerHTML = 
-            '<tr><td colspan="4" class="loading loading-spinner">載入中...</td></tr>';
+            '<tr><td colspan="4" class="loading loading-spinner">載入資料中...</td></tr>';
     }
 }
 
@@ -309,11 +458,14 @@ function showLoading(show) {
 function showError(message) {
     console.error(message);
     
-    document.getElementById('latestPrice').textContent = '錯誤';
+    document.getElementById('latestPrice').textContent = 'ERROR';
+    document.getElementById('latestPrice').style.color = 'var(--neon-pink)';
     document.getElementById('dataCount').textContent = '0';
     document.getElementById('priceTrend').textContent = '-';
     document.getElementById('lastUpdate').textContent = '載入失敗';
     
     document.getElementById('tableBody').innerHTML = 
-        `<tr><td colspan="4" class="loading" style="color: #f44336;">載入失敗: ${message}</td></tr>`;
+        `<tr><td colspan="4" class="loading" style="color: var(--neon-pink);">
+            <strong>⚠ 載入失敗</strong><br><small>${message}</small>
+        </td></tr>`;
 }

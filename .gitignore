@@ -393,6 +393,8 @@ FodyWeavers.xsd
 # Local History for Visual Studio Code
 .history/
 
+# Windows image file caches
+.data/
 # Windows Installer files from build outputs
 *.cab
 *.msi

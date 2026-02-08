@@ -3,54 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>台積電股價監控 | TWSE Scraper</title>
+    <title>TSMC 2330 | 即時監控終端</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+    <div class="grid-overlay"></div>
+    <div class="scanline"></div>
     <div class="container">
         <header>
-            <h1>🚀 台積電股價監控</h1>
-            <p>即時追蹤台積電 (2330) 股價資料</p>
+            <div class="terminal-header">
+                <span class="terminal-dot red"></span>
+                <span class="terminal-dot yellow"></span>
+                <span class="terminal-dot green"></span>
+            </div>
+            <div class="logo-section">
+                <h1><span class="ticker-symbol">TSMC</span> <span class="stock-code">2330</span></h1>
+                <p class="subtitle">台灣積體電路製造股份有限公司 <span class="divider">|</span> 即時市場分析終端</p>
+            </div>
         </header>
 
         <div class="stats-grid">
-            <div class="stat-card">
-                <h3>最新價格</h3>
+            <div class="stat-card glow-card">
+                <div class="card-header">
+                    <span class="card-icon">$</span>
+                    <h3>最新價格</h3>
+                </div>
                 <span class="price" id="latestPrice">載入中...</span>
                 <small id="latestDate"></small>
+                <div class="card-accent"></div>
             </div>
-            <div class="stat-card">
-                <h3>資料筆數</h3>
+            <div class="stat-card glow-card">
+                <div class="card-header">
+                    <span class="card-icon">#</span>
+                    <h3>資料筆數</h3>
+                </div>
                 <span class="count" id="dataCount">載入中...</span>
                 <small>總收集筆數</small>
+                <div class="card-accent"></div>
             </div>
-            <div class="stat-card">
-                <h3>價格趨勢</h3>
+            <div class="stat-card glow-card">
+                <div class="card-header">
+                    <span class="card-icon">△</span>
+                    <h3>價格趨勢</h3>
+                </div>
                 <span class="trend" id="priceTrend">載入中...</span>
                 <small id="trendDesc"></small>
+                <div class="card-accent"></div>
             </div>
-            <div class="stat-card">
-                <h3>最後更新</h3>
+            <div class="stat-card glow-card">
+                <div class="card-header">
+                    <span class="card-icon">⏱</span>
+                    <h3>最後更新</h3>
+                </div>
                 <span class="update-time" id="lastUpdate">載入中...</span>
                 <small>資料更新時間</small>
+                <div class="card-accent"></div>
             </div>
         </div>
 
-        <div class="chart-section">
-            <h2>📈 股價走勢圖</h2>
+        <div class="chart-section glow-card">
+            <div class="section-header">
+                <h2><span class="section-icon">▸</span> 股價走勢圖</h2>
+                <div class="live-indicator">
+                    <span class="pulse"></span>
+                    <span>LIVE</span>
+                </div>
+            </div>
             <div class="chart-container">
                 <canvas id="priceChart"></canvas>
             </div>
+            <div class="card-accent"></div>
         </div>
 
-        <div class="data-section">
-            <h2>📊 詳細資料</h2>
+        <div class="data-section glow-card">
+            <div class="section-header">
+                <h2><span class="section-icon">▸</span> 詳細資料</h2>
+            </div>
             <div class="controls">
-                <select id="fileSelector">
-                    <option value="">選擇資料檔案...</option>
-                </select>
-                <button id="refreshBtn">🔄 重新整理</button>
+                <div class="select-wrapper">
+                    <select id="fileSelector">
+                        <option value="">選擇資料檔案...</option>
+                    </select>
+                </div>
+                <button id="refreshBtn">
+                    <span class="btn-icon">↻</span>
+                    <span>重新整理</span>
+                </button>
             </div>
             <div class="table-container">
                 <table id="dataTable">
@@ -69,13 +111,17 @@
                     </tbody>
                 </table>
             </div>
+            <div class="card-accent"></div>
         </div>
 
         <footer>
-            <p>🤖 由 TwseScraper 自動收集資料 | 
-               📅 更新時間: <span id="footerUpdate"></span> |
-               📊 資料來源: <a href="https://openapi.twse.com.tw/" target="_blank">台灣證券交易所</a>
-            </p>
+            <div class="footer-content">
+                <span class="footer-item"><span class="footer-label">系統</span> TwseScraper v1.0</span>
+                <span class="footer-divider">|</span>
+                <span class="footer-item"><span class="footer-label">更新</span> <span id="footerUpdate"></span></span>
+                <span class="footer-divider">|</span>
+                <span class="footer-item"><span class="footer-label">來源</span> <a href="https://openapi.twse.com.tw/" target="_blank">TWSE OpenAPI</a></span>
+            </div>
         </footer>
     </div>
 
