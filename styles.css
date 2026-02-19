@@ -399,6 +399,8 @@ header h1 {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 25px;
+    flex-wrap: wrap;
+    gap: 15px;
 }
 
 .section-header h2 {
@@ -428,6 +430,45 @@ header h1 {
     font-weight: 600;
     color: var(--neon-green);
     letter-spacing: 0.1em;
+}
+
+/* 圖表控制區域 - 包含月份篩選器和 LIVE 指示器 */
+.chart-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* 月份篩選器包裝容器 */
+.month-filter-wrapper {
+    min-width: 180px;
+    flex: 0 0 auto;
+}
+
+/* 月份篩選器樣式 - 與檔案選擇器保持一致的設計風格 */
+#monthFilter {
+    width: 100%;
+    padding: 10px 35px 10px 14px;
+    border: 1px solid rgba(0, 245, 255, 0.3);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-family: var(--font-body);
+    background: rgba(0, 0, 0, 0.3);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+    appearance: none;
+    cursor: pointer;
+}
+
+#monthFilter:hover {
+    border-color: var(--neon-cyan);
+    background: rgba(0, 0, 0, 0.4);
+}
+
+#monthFilter:focus {
+    outline: none;
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 0 3px rgba(0, 245, 255, 0.1);
 }
 
 .pulse {
@@ -738,6 +779,16 @@ footer a:hover {
         flex-direction: column;
         align-items: flex-start;
         gap: 15px;
+    }
+    
+    .chart-controls {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+    
+    .month-filter-wrapper {
+        flex: 1;
+        min-width: 150px;
     }
     
     .footer-content {
