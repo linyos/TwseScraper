@@ -1,6 +1,8 @@
 // 全域變數
 let allData = [];
+let filteredData = []; // 用於儲存篩選後的資料
 let chart = null;
+let selectedMonth = ''; // 當前選擇的月份
 
 // DOM 載入完成後執行
 document.addEventListener('DOMContentLoaded', function() {
@@ -18,6 +20,7 @@ function initializePage() {
 function setupEventListeners() {
     document.getElementById('fileSelector').addEventListener('change', handleFileChange);
     document.getElementById('refreshBtn').addEventListener('click', refreshData);
+    document.getElementById('monthFilter').addEventListener('change', handleMonthFilterChange);
 }
 
 // 添加增強視覺效果
@@ -136,6 +139,12 @@ async function loadDataFromFile(fileName) {
         const data = await response.json();
         allData = Array.isArray(data) ? data : [data];
         
+        // 重置月份篩選器並填充可用月份
+        populateMonthFilter();
+        
+        // 應用當前的月份篩選
+        applyMonthFilter();
+        
         updateStatistics();
         updateChart();
         updateTable();
@@ -148,16 +157,89 @@ async function loadDataFromFile(fileName) {
     }
 }
 
+// 填充月份篩選器選項
+function populateMonthFilter() {
+    const monthFilter = document.getElementById('monthFilter');
+    
+    // 保存當前選擇的月份
+    const currentSelection = monthFilter.value;
+    
+    // 清空並重置為預設選項
+    monthFilter.innerHTML = '<option value="">所有月份</option>';
+    
+    if (allData.length === 0) {
+        return;
+    }
+    
+    // 提取所有唯一的年月組合並排序
+    const monthsSet = new Set();
+    allData.forEach(item => {
+        const date = new Date(item.Date);
+        const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        monthsSet.add(yearMonth);
+    });
+    
+    const months = Array.from(monthsSet).sort();
+    
+    // 為每個月份創建選項
+    months.forEach(month => {
+        const option = document.createElement('option');
+        option.value = month;
+        
+        // 格式化顯示文字: YYYY年MM月
+        const [year, monthNum] = month.split('-');
+        option.textContent = `${year}年${monthNum}月`;
+        
+        monthFilter.appendChild(option);
+    });
+    
+    // 恢復之前的選擇（如果仍然有效）
+    if (currentSelection && months.includes(currentSelection)) {
+        monthFilter.value = currentSelection;
+        selectedMonth = currentSelection;
+    } else if (months.length > 0) {
+        // 預設選擇最新的月份
+        const latestMonth = months[months.length - 1];
+        monthFilter.value = latestMonth;
+        selectedMonth = latestMonth;
+    }
+}
+
+// 處理月份篩選器變更
+function handleMonthFilterChange(event) {
+    selectedMonth = event.target.value;
+    applyMonthFilter();
+    updateStatistics();
+    updateChart();
+    updateTable();
+}
+
+// 應用月份篩選
+function applyMonthFilter() {
+    if (!selectedMonth) {
+        // 如果沒有選擇月份，顯示所有資料
+        filteredData = [...allData];
+    } else {
+        // 篩選出選定月份的資料
+        filteredData = allData.filter(item => {
+            return item.Date.startsWith(selectedMonth);
+        });
+    }
+}
+
 
 
 
 
 // 更新統計資料
 function updateStatistics() {
-    if (allData.length === 0) return;
+    // 使用篩選後的資料來計算統計
+    const dataToUse = filteredData.length > 0 ? filteredData : allData;
     
-    const latest = allData[allData.length - 1];
-    const previous = allData.length > 1 ? allData[allData.length - 2] : null;
+    if (dataToUse.length === 0) return;
+    
+    const latest = dataToUse[dataToUse.length - 1];
+    const previous = dataToUse.length > 1 ? dataToUse[dataToUse.length - 2] : null;
     
     // 最新價格（使用動畫）
     const priceElement = document.getElementById('latestPrice');
@@ -165,9 +247,9 @@ function updateStatistics() {
     animateNumber(priceElement, targetPrice, 800, true);
     document.getElementById('latestDate').textContent = latest.Date;
     
-    // 資料筆數（使用動畫）
+    // 資料筆數（使用動畫）- 顯示篩選後的資料筆數
     const countElement = document.getElementById('dataCount');
-    animateNumber(countElement, allData.length, 800, false);
+    animateNumber(countElement, dataToUse.length, 800, false);
     
     // 價格趨勢
     if (previous) {
@@ -226,8 +308,10 @@ function updateChart() {
         chart.destroy();
     }
     
-    const labels = allData.map(item => item.Date);
-    const prices = allData.map(item => parseFloat(item.Price));
+    // 使用篩選後的資料來更新圖表
+    const dataToUse = filteredData.length > 0 ? filteredData : allData;
+    const labels = dataToUse.map(item => item.Date);
+    const prices = dataToUse.map(item => parseFloat(item.Price));
     
     // 創建漸層
     const gradient = ctx.createLinearGradient(0, 0, 0, 400);
@@ -368,13 +452,16 @@ function updateTable() {
     const tbody = document.getElementById('tableBody');
     tbody.innerHTML = '';
     
-    if (allData.length === 0) {
+    // 使用篩選後的資料來更新表格
+    const dataToUse = filteredData.length > 0 ? filteredData : allData;
+    
+    if (dataToUse.length === 0) {
         tbody.innerHTML = '<tr><td colspan="4" class="loading">無資料可顯示</td></tr>';
         return;
     }
     
     // 反向顯示 (最新的在前)
-    const reversedData = [...allData].reverse();
+    const reversedData = [...dataToUse].reverse();
     
     reversedData.forEach((item, index) => {
         const row = document.createElement('tr');
@@ -423,6 +510,7 @@ function updateTable() {
 function refreshData() {
     const selectedFile = document.getElementById('fileSelector').value;
     if (selectedFile) {
+        // 保持當前選擇的月份
         loadDataFromFile(selectedFile);
     } else {
         loadAvailableFiles();

@@ -68,9 +68,16 @@
         <div class="chart-section glow-card">
             <div class="section-header">
                 <h2><span class="section-icon">▸</span> 股價走勢圖</h2>
-                <div class="live-indicator">
-                    <span class="pulse"></span>
-                    <span>LIVE</span>
+                <div class="chart-controls">
+                    <div class="select-wrapper month-filter-wrapper">
+                        <select id="monthFilter" title="選擇月份以篩選圖表資料">
+                            <option value="">所有月份</option>
+                        </select>
+                    </div>
+                    <div class="live-indicator">
+                        <span class="pulse"></span>
+                        <span>LIVE</span>
+                    </div>
                 </div>
             </div>
             <div class="chart-container">
