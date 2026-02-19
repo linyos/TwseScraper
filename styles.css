@@ -432,17 +432,20 @@ header h1 {
     letter-spacing: 0.1em;
 }
 
+/* 圖表控制區域 - 包含月份篩選器和 LIVE 指示器 */
 .chart-controls {
     display: flex;
     align-items: center;
     gap: 15px;
 }
 
+/* 月份篩選器包裝容器 */
 .month-filter-wrapper {
     min-width: 180px;
     flex: 0 0 auto;
 }
 
+/* 月份篩選器樣式 - 與檔案選擇器保持一致的設計風格 */
 #monthFilter {
     width: 100%;
     padding: 10px 35px 10px 14px;
