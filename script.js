@@ -184,6 +184,25 @@ async function loadDataFromFile(fileName) {
     }
 }
 
+// 獲取要顯示的資料集
+// 統一的輔助函數，用於決定應該使用 filteredData 還是 allData
+// 如果有篩選後的資料就使用篩選後的，否則使用全部資料
+function getDisplayData() {
+    return filteredData.length > 0 ? filteredData : allData;
+}
+
+// 驗證日期格式是否為 YYYY-MM-DD
+// 返回 true 如果格式正確，否則返回 false
+function isValidDateFormat(dateStr) {
+    if (typeof dateStr !== 'string') return false;
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(dateStr)) return false;
+    
+    // 進一步驗證日期是否有效
+    const date = new Date(dateStr);
+    return !isNaN(date.getTime());
+}
+
 // 填充月份篩選器選項
 // 此函數會從 allData 中提取所有唯一的年月組合，並填充到月份篩選器中
 // 預設會選擇最新的月份，或保留使用者之前的選擇（如果仍然有效）
@@ -203,7 +222,19 @@ function populateMonthFilter() {
     // 提取所有唯一的年月組合並排序
     const monthsSet = new Set();
     allData.forEach(item => {
+        // 驗證日期格式
+        if (!isValidDateFormat(item.Date)) {
+            console.warn(`無效的日期格式: ${item.Date}`);
+            return;
+        }
+        
         const date = new Date(item.Date);
+        // 確保日期物件有效
+        if (isNaN(date.getTime())) {
+            console.warn(`無法解析日期: ${item.Date}`);
+            return;
+        }
+        
         const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
         monthsSet.add(yearMonth);
     });
@@ -249,13 +280,22 @@ function handleMonthFilterChange(event) {
 // 根據 selectedMonth 的值篩選 allData，將結果存入 filteredData
 // - 如果 selectedMonth 為空字串，表示選擇了 "所有月份"，顯示全部資料
 // - 否則，只顯示符合選定月份的資料項目
+// - 使用日期格式驗證確保資料正確性
 function applyMonthFilter() {
     if (!selectedMonth) {
         // 如果沒有選擇月份，顯示所有資料
         filteredData = [...allData];
     } else {
-        // 篩選出選定月份的資料（比對日期字串的前綴: YYYY-MM）
+        // 篩選出選定月份的資料
+        // 驗證日期格式並確保只篩選有效的資料項目
         filteredData = allData.filter(item => {
+            // 確保 Date 屬性存在且為字串格式
+            if (typeof item.Date !== 'string') {
+                console.warn(`資料項目的日期不是字串格式:`, item);
+                return false;
+            }
+            
+            // 比對日期字串的前綴 (YYYY-MM)
             return item.Date.startsWith(selectedMonth);
         });
     }
@@ -267,8 +307,8 @@ function applyMonthFilter() {
 
 // 更新統計資料
 function updateStatistics() {
-    // 使用篩選後的資料來計算統計
-    const dataToUse = filteredData.length > 0 ? filteredData : allData;
+    // 使用輔助函數獲取要顯示的資料集
+    const dataToUse = getDisplayData();
     
     if (dataToUse.length === 0) return;
     
@@ -342,8 +382,8 @@ function updateChart() {
         chart.destroy();
     }
     
-    // 使用篩選後的資料來更新圖表
-    const dataToUse = filteredData.length > 0 ? filteredData : allData;
+    // 使用輔助函數獲取要顯示的資料集
+    const dataToUse = getDisplayData();
     const labels = dataToUse.map(item => item.Date);
     const prices = dataToUse.map(item => parseFloat(item.Price));
     
@@ -486,8 +526,8 @@ function updateTable() {
     const tbody = document.getElementById('tableBody');
     tbody.innerHTML = '';
     
-    // 使用篩選後的資料來更新表格
-    const dataToUse = filteredData.length > 0 ? filteredData : allData;
+    // 使用輔助函數獲取要顯示的資料集
+    const dataToUse = getDisplayData();
     
     if (dataToUse.length === 0) {
         tbody.innerHTML = '<tr><td colspan="4" class="loading">無資料可顯示</td></tr>';
