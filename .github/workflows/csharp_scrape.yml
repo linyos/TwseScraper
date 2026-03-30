@@ -2,8 +2,18 @@ name: Daily Stock Scraper (C#)
 
 on:
   schedule:
-    - cron: '0 6 * * 1-5' # 每個工作日的上午 9 點執行
+    - cron: '0 6 * * 1-5' # 每個工作日 UTC 06:00 (台北時間 14:00)
   workflow_dispatch:
+    inputs:
+      target_stock:
+        description: '目標股票代碼'
+        required: false
+        default: '2330'
+
+# 防止同時執行多個 workflow 實例
+concurrency:
+  group: stock-scraper
+  cancel-in-progress: false
 
 jobs:
   build-and-scrape:
@@ -18,19 +28,53 @@ jobs:
     - name: Checkout source
       uses: actions/checkout@v4
 
-    # 2. 設定 .NET 8 環境
+    # 2. 設定 .NET 8 環境（含快取）
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '8.0.x'
-    # 3. 執行 C# 專案
-    - name: Run Scraper
-      run: dotnet run
 
-    # 4. Commit 並 Push 結果
+    # 3. 快取 NuGet 套件
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    # 4. 還原相依套件
+    - name: Restore dependencies
+      run: dotnet restore TwseScraper.sln
+
+    # 5. 建置專案
+    - name: Build project
+      run: dotnet build TwseScraper.sln --no-restore --configuration Release
+
+    # 6. 執行爬蟲
+    - name: Run Scraper
+      run: dotnet run --project src/TwseScraper.Console/TwseScraper.Console.csproj --no-build --configuration Release
+      timeout-minutes: 5
+
+    # 7. 檢查是否有資料變更
+    - name: Check for changes
+      id: changes
+      run: |
+        git add data/
+        if git diff --staged --quiet; then
+          echo "changed=false" >> $GITHUB_OUTPUT
+          echo "📭 沒有新的資料變更"
+        else
+          echo "changed=true" >> $GITHUB_OUTPUT
+          echo "📬 偵測到資料變更"
+        fi
+
+    # 8. Commit 並 Push 結果（僅在有變更時）
     - name: Commit and Push
+      if: steps.changes.outputs.changed == 'true'
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add data/
-        git diff --quiet && git diff --staged --quiet || (git commit -m "Auto: Update Stock Price" && git push)
+        DATE=$(TZ='Asia/Taipei' date +'%Y-%m-%d %H:%M')
+        git commit -m "📊 更新股價資料 ${DATE}"
+        git push

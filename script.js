@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 初始化頁面
 function initializePage() {
+    updateLoaderText('正在載入資料檔案...');
     loadAvailableFiles();
     setupEventListeners();
 }
@@ -112,7 +113,8 @@ async function loadAvailableFiles() {
         populateFileSelector(files);
     } catch (error) {
         console.error('無法載入檔案列表:', error);
-        showError('無法存取 data/files.json 清單檔案');
+        showToast('無法存取 data/files.json 清單檔案', 'error');
+        hideGlobalLoader();
     }
 }
 
@@ -127,7 +129,8 @@ function populateFileSelector(files) {
         option.textContent = "無可用的資料檔案";
         option.disabled = true;
         selector.appendChild(option);
-        showError('data/ 目錄中沒有找到股票資料檔案');
+        showToast('data/ 目錄中沒有找到股票資料檔案', 'error');
+        hideGlobalLoader();
         return;
     }
     
@@ -140,6 +143,7 @@ function populateFileSelector(files) {
     
     // 自動選擇最新的檔案
     if (files.length > 0) {
+        updateLoaderText('正在載入股價資料...');
         selector.value = files[files.length - 1];
         loadDataFromFile(files[files.length - 1]);
     }
@@ -176,11 +180,15 @@ async function loadDataFromFile(fileName) {
         updateChart();
         updateTable();
         
+        showToast(`已載入 ${fileName}（${allData.length} 筆資料）`, 'success');
+        
     } catch (error) {
         console.error('載入資料時發生錯誤:', error);
-        showError('無法載入資料檔案: ' + fileName);
+        showToast('無法載入資料檔案: ' + fileName, 'error');
+        showErrorState();
     } finally {
         showLoading(false);
+        hideGlobalLoader();
     }
 }
 
@@ -593,33 +601,81 @@ function refreshData() {
 
 // 顯示載入狀態
 function showLoading(show) {
-    const elements = [
-        { id: 'latestPrice', loading: '載入中...' },
-        { id: 'dataCount', loading: '載入中...' },
-        { id: 'priceTrend', loading: '載入中...' },
-        { id: 'lastUpdate', loading: '載入中...' }
-    ];
-    
-    elements.forEach(item => {
-        const element = document.getElementById(item.id);
-        if (show) {
-            element.textContent = item.loading;
-            element.classList.add('loading-spinner');
-        } else {
-            element.classList.remove('loading-spinner');
-        }
-    });
+    const statCards = document.querySelectorAll('.stat-card');
     
     if (show) {
-        document.getElementById('tableBody').innerHTML = 
-            '<tr><td colspan="4" class="loading loading-spinner">載入資料中...</td></tr>';
+        // 卡片顯示骨架屏
+        statCards.forEach(card => card.classList.add('is-loading'));
+        document.getElementById('latestPrice').innerHTML = '<span class="skeleton skeleton-text"></span>';
+        document.getElementById('dataCount').innerHTML = '<span class="skeleton skeleton-text"></span>';
+        document.getElementById('priceTrend').innerHTML = '<span class="skeleton skeleton-text"></span>';
+        document.getElementById('lastUpdate').innerHTML = '<span class="skeleton skeleton-text skeleton-short"></span>';
+        
+        // 表格顯示載入動畫
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        for (let i = 0; i < 5; i++) {
+            tbody.innerHTML += `<tr>
+                <td><span class="skeleton" style="width:80px;height:14px"></span></td>
+                <td><span class="skeleton" style="width:50px;height:14px"></span></td>
+                <td><span class="skeleton" style="width:70px;height:14px"></span></td>
+                <td><span class="skeleton" style="width:100px;height:14px"></span></td>
+            </tr>`;
+        }
+    } else {
+        statCards.forEach(card => card.classList.remove('is-loading'));
     }
 }
 
-// 顯示錯誤訊息
-function showError(message) {
-    console.error(message);
+// 更新全域載入器狀態文字
+function updateLoaderText(text) {
+    const loaderText = document.querySelector('.loader-text');
+    if (loaderText) loaderText.textContent = text;
+}
+
+// 隱藏全域載入遮罩
+function hideGlobalLoader() {
+    const loader = document.getElementById('globalLoader');
+    if (loader) {
+        // 完成進度條
+        const progressBar = loader.querySelector('.loader-progress-bar');
+        if (progressBar) progressBar.style.width = '100%';
+        
+        setTimeout(() => {
+            loader.classList.remove('active');
+        }, 400);
+    }
+}
+
+// Toast 通知系統
+function showToast(message, type = 'info', duration = 4000) {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
     
+    const icons = { success: '✓', error: '⚠', info: 'ⓘ' };
+    
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+        <span class="toast-icon">${icons[type] || icons.info}</span>
+        <span class="toast-message">${message}</span>
+        <button class="toast-close" aria-label="關閉">✕</button>
+    `;
+    
+    container.appendChild(toast);
+    
+    const closeBtn = toast.querySelector('.toast-close');
+    const removeToast = () => {
+        toast.classList.add('removing');
+        setTimeout(() => toast.remove(), 300);
+    };
+    
+    closeBtn.addEventListener('click', removeToast);
+    setTimeout(removeToast, duration);
+}
+
+// 顯示錯誤狀態
+function showErrorState() {
     document.getElementById('latestPrice').textContent = 'ERROR';
     document.getElementById('latestPrice').style.color = 'var(--neon-pink)';
     document.getElementById('dataCount').textContent = '0';
@@ -628,6 +684,6 @@ function showError(message) {
     
     document.getElementById('tableBody').innerHTML = 
         `<tr><td colspan="4" class="loading" style="color: var(--neon-pink);">
-            <strong>⚠ 載入失敗</strong><br><small>${message}</small>
+            <strong>⚠ 載入失敗</strong>
         </td></tr>`;
 }

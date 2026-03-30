@@ -8,11 +8,21 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
 </head>
 <body>
     <div class="grid-overlay"></div>
     <div class="scanline"></div>
+    <!-- 全域載入遮罩 -->
+    <div id="globalLoader" class="global-loader active">
+        <div class="loader-content">
+            <div class="loader-spinner"></div>
+            <div class="loader-text">正在初始化系統...</div>
+            <div class="loader-progress"><div class="loader-progress-bar"></div></div>
+        </div>
+    </div>
+    <!-- Toast 通知容器 -->
+    <div id="toastContainer" class="toast-container"></div>
     <div class="container">
         <header>
             <div class="terminal-header">
@@ -32,7 +42,7 @@
                     <span class="card-icon">$</span>
                     <h3>最新價格</h3>
                 </div>
-                <span class="price" id="latestPrice">載入中...</span>
+                <span class="price" id="latestPrice"><span class="skeleton skeleton-text"></span></span>
                 <small id="latestDate"></small>
                 <div class="card-accent"></div>
             </div>
@@ -41,7 +51,7 @@
                     <span class="card-icon">#</span>
                     <h3>資料筆數</h3>
                 </div>
-                <span class="count" id="dataCount">載入中...</span>
+                <span class="count" id="dataCount"><span class="skeleton skeleton-text"></span></span>
                 <small>總收集筆數</small>
                 <div class="card-accent"></div>
             </div>
@@ -50,7 +60,7 @@
                     <span class="card-icon">△</span>
                     <h3>價格趨勢</h3>
                 </div>
-                <span class="trend" id="priceTrend">載入中...</span>
+                <span class="trend" id="priceTrend"><span class="skeleton skeleton-text"></span></span>
                 <small id="trendDesc"></small>
                 <div class="card-accent"></div>
             </div>
@@ -59,7 +69,7 @@
                     <span class="card-icon">⏱</span>
                     <h3>最後更新</h3>
                 </div>
-                <span class="update-time" id="lastUpdate">載入中...</span>
+                <span class="update-time" id="lastUpdate"><span class="skeleton skeleton-text skeleton-short"></span></span>
                 <small>資料更新時間</small>
                 <div class="card-accent"></div>
             </div>
