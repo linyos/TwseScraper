@@ -29,6 +29,13 @@
 let allData = []; // 儲存從檔案載入的完整資料集
 let filteredData = []; // 儲存根據月份篩選後的資料（用於圖表、統計和表格顯示）
 let chart = null; // Chart.js 圖表實例
+let taChart = null; // lightweight-charts K線圖表實例
+let taCandleSeries = null; // K線 series
+let taVolumeSeries = null; // 成交量 series
+let taMA5Series = null; // MA5 均線 series
+let taMA10Series = null; // MA10 均線 series
+let taMA20Series = null; // MA20 均線 series
+let activeMAs = new Set(); // 當前啟用的均線
 let selectedMonth = ''; // 當前選擇的月份（格式: YYYY-MM，例如 "2026-01"）
 
 // DOM 載入完成後執行
@@ -49,6 +56,11 @@ function setupEventListeners() {
     document.getElementById('fileSelector').addEventListener('change', handleFileChange);
     document.getElementById('refreshBtn').addEventListener('click', refreshData);
     document.getElementById('monthFilter').addEventListener('change', handleMonthFilterChange);
+    
+    // 技術面分析: MA均線切換按鈕
+    document.querySelectorAll('.ta-tab').forEach(tab => {
+        tab.addEventListener('click', handleTATabClick);
+    });
 }
 
 // 添加增強視覺效果
@@ -178,6 +190,7 @@ async function loadDataFromFile(fileName) {
         
         updateStatistics();
         updateChart();
+        updateTAChart();
         updateTable();
         
         showToast(`已載入 ${fileName}（${allData.length} 筆資料）`, 'success');
@@ -281,6 +294,7 @@ function handleMonthFilterChange(event) {
     applyMonthFilter();
     updateStatistics();
     updateChart();
+    updateTAChart();
     updateTable();
 }
 
@@ -529,6 +543,227 @@ function updateChart() {
     });
 }
 
+// ============================================
+// 技術面分析圖表 (K線 + 成交量)
+// ============================================
+
+// 計算移動平均線（使用收盤價計算，為技術分析標準做法）
+function calculateMA(data, period) {
+    const result = [];
+    for (let i = 0; i < data.length; i++) {
+        if (i < period - 1) continue;
+        let sum = 0;
+        for (let j = 0; j < period; j++) {
+            sum += parseFloat(data[i - j].Price);
+        }
+        result.push({
+            time: data[i].Date,
+            value: parseFloat((sum / period).toFixed(2))
+        });
+    }
+    return result;
+}
+
+// 處理 MA 切換按鈕點擊
+function handleTATabClick(event) {
+    const tab = event.currentTarget;
+    const maType = tab.dataset.ma;
+
+    if (maType === 'none') {
+        // K線按鈕: 不切換，始終保持 active
+        return;
+    }
+
+    // 切換 active 狀態
+    tab.classList.toggle('active');
+
+    if (tab.classList.contains('active')) {
+        activeMAs.add(maType);
+    } else {
+        activeMAs.delete(maType);
+    }
+
+    // 更新均線顯示
+    updateMAVisibility();
+}
+
+// 更新均線可見性
+function updateMAVisibility() {
+    if (taMA5Series) {
+        taMA5Series.applyOptions({
+            visible: activeMAs.has('ma5')
+        });
+    }
+    if (taMA10Series) {
+        taMA10Series.applyOptions({
+            visible: activeMAs.has('ma10')
+        });
+    }
+    if (taMA20Series) {
+        taMA20Series.applyOptions({
+            visible: activeMAs.has('ma20')
+        });
+    }
+}
+
+// 建立或更新技術面分析圖表
+function updateTAChart() {
+    // 確認 lightweight-charts 已載入
+    if (typeof LightweightCharts === 'undefined') {
+        console.warn('LightweightCharts 尚未載入，跳過技術面分析圖表更新');
+        return;
+    }
+
+    const container = document.getElementById('taChartContainer');
+    if (!container) return;
+
+    const dataToUse = getDisplayData();
+    if (dataToUse.length === 0) return;
+
+    // 檢查資料是否包含 OHLC 欄位（驗證所有資料項目）
+    const hasOHLC = dataToUse.every(item => item.Open && item.High && item.Low);
+    if (!hasOHLC) {
+        container.innerHTML = '<div class="ta-chart-empty">資料缺少 OHLC 欄位，無法顯示 K 線圖</div>';
+        return;
+    }
+
+    // 銷毀舊圖表
+    if (taChart) {
+        taChart.remove();
+        taChart = null;
+    }
+
+    // 建立圖表
+    taChart = LightweightCharts.createChart(container, {
+        width: container.clientWidth,
+        height: container.clientHeight,
+        layout: {
+            background: { type: 'solid', color: 'transparent' },
+            textColor: '#8b92a7',
+            fontFamily: "'JetBrains Mono', 'Courier New', monospace",
+            fontSize: 11
+        },
+        grid: {
+            vertLines: { color: 'rgba(0, 245, 255, 0.06)' },
+            horzLines: { color: 'rgba(0, 245, 255, 0.06)' }
+        },
+        crosshair: {
+            mode: LightweightCharts.CrosshairMode.Normal,
+            vertLine: {
+                color: 'rgba(0, 245, 255, 0.4)',
+                width: 1,
+                style: LightweightCharts.LineStyle.Dashed,
+                labelBackgroundColor: '#1a1f3a'
+            },
+            horzLine: {
+                color: 'rgba(0, 245, 255, 0.4)',
+                width: 1,
+                style: LightweightCharts.LineStyle.Dashed,
+                labelBackgroundColor: '#1a1f3a'
+            }
+        },
+        rightPriceScale: {
+            borderColor: 'rgba(0, 245, 255, 0.15)',
+            scaleMargins: {
+                top: 0.05,
+                bottom: 0.25
+            }
+        },
+        timeScale: {
+            borderColor: 'rgba(0, 245, 255, 0.15)',
+            timeVisible: false,
+            rightOffset: 5,
+            barSpacing: 8
+        },
+        handleScroll: { vertTouchDrag: false },
+    });
+
+    // 新增 K線 series
+    taCandleSeries = taChart.addCandlestickSeries({
+        upColor: '#00ff88',
+        downColor: '#ff0055',
+        borderUpColor: '#00ff88',
+        borderDownColor: '#ff0055',
+        wickUpColor: '#00ff88',
+        wickDownColor: '#ff0055'
+    });
+
+    const candleData = dataToUse.map(item => ({
+        time: item.Date,
+        open: parseFloat(item.Open),
+        high: parseFloat(item.High),
+        low: parseFloat(item.Low),
+        close: parseFloat(item.Price)
+    }));
+    taCandleSeries.setData(candleData);
+
+    // 新增成交量 series
+    taVolumeSeries = taChart.addHistogramSeries({
+        priceFormat: { type: 'volume' },
+        priceScaleId: 'volume'
+    });
+
+    taChart.priceScale('volume').applyOptions({
+        scaleMargins: {
+            top: 0.82,
+            bottom: 0
+        }
+    });
+
+    const volumeData = dataToUse.map(item => {
+        const close = parseFloat(item.Price);
+        const open = parseFloat(item.Open);
+        return {
+            time: item.Date,
+            value: parseInt(item.Volume) || 0,
+            color: close >= open
+                ? 'rgba(0, 255, 136, 0.35)'
+                : 'rgba(255, 0, 85, 0.35)'
+        };
+    });
+    taVolumeSeries.setData(volumeData);
+
+    // 新增 MA 均線 series
+    taMA5Series = taChart.addLineSeries({
+        color: '#ffbd2e',
+        lineWidth: 1,
+        visible: activeMAs.has('ma5'),
+        lastValueVisible: false,
+        priceLineVisible: false
+    });
+    taMA5Series.setData(calculateMA(dataToUse, 5));
+
+    taMA10Series = taChart.addLineSeries({
+        color: '#b87fff',
+        lineWidth: 1,
+        visible: activeMAs.has('ma10'),
+        lastValueVisible: false,
+        priceLineVisible: false
+    });
+    taMA10Series.setData(calculateMA(dataToUse, 10));
+
+    taMA20Series = taChart.addLineSeries({
+        color: '#00f5ff',
+        lineWidth: 1,
+        visible: activeMAs.has('ma20'),
+        lastValueVisible: false,
+        priceLineVisible: false
+    });
+    taMA20Series.setData(calculateMA(dataToUse, 20));
+
+    // 自適應圖表寬度
+    taChart.timeScale().fitContent();
+
+    // 監聽容器尺寸變化
+    const resizeObserver = new ResizeObserver(entries => {
+        if (taChart) {
+            const { width, height } = entries[0].contentRect;
+            taChart.applyOptions({ width, height });
+        }
+    });
+    resizeObserver.observe(container);
+}
+
 // 更新表格
 function updateTable() {
     const tbody = document.getElementById('tableBody');
@@ -538,7 +773,7 @@ function updateTable() {
     const dataToUse = getDisplayData();
     
     if (dataToUse.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="loading">無資料可顯示</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="loading">無資料可顯示</td></tr>';
         return;
     }
     
@@ -576,11 +811,20 @@ function updateTable() {
                 changeCell = '<span class="price-change price-neutral">● 0.00 (0.00%)</span>';
             }
         }
+
+        const openPrice = item.Open ? `$${parseFloat(item.Open).toFixed(2)}` : '-';
+        const highPrice = item.High ? `$${parseFloat(item.High).toFixed(2)}` : '-';
+        const lowPrice = item.Low ? `$${parseFloat(item.Low).toFixed(2)}` : '-';
+        const volume = item.Volume ? parseInt(item.Volume).toLocaleString() : '-';
         
         row.innerHTML = `
             <td>${item.Date}</td>
             <td>${item.StockNo}</td>
+            <td>${openPrice}</td>
+            <td>${highPrice}</td>
+            <td>${lowPrice}</td>
             <td>$${parseFloat(item.Price).toFixed(2)}</td>
+            <td>${volume}</td>
             <td>${changeCell}</td>
         `;
         
@@ -619,6 +863,10 @@ function showLoading(show) {
                 <td><span class="skeleton" style="width:80px;height:14px"></span></td>
                 <td><span class="skeleton" style="width:50px;height:14px"></span></td>
                 <td><span class="skeleton" style="width:70px;height:14px"></span></td>
+                <td><span class="skeleton" style="width:70px;height:14px"></span></td>
+                <td><span class="skeleton" style="width:70px;height:14px"></span></td>
+                <td><span class="skeleton" style="width:70px;height:14px"></span></td>
+                <td><span class="skeleton" style="width:60px;height:14px"></span></td>
                 <td><span class="skeleton" style="width:100px;height:14px"></span></td>
             </tr>`;
         }
@@ -683,7 +931,7 @@ function showErrorState() {
     document.getElementById('lastUpdate').textContent = '載入失敗';
     
     document.getElementById('tableBody').innerHTML = 
-        `<tr><td colspan="4" class="loading" style="color: var(--neon-pink);">
+        `<tr><td colspan="8" class="loading" style="color: var(--neon-pink);">
             <strong>⚠ 載入失敗</strong>
         </td></tr>`;
 }
