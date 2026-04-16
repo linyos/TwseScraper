@@ -547,7 +547,7 @@ function updateChart() {
 // 技術面分析圖表 (K線 + 成交量)
 // ============================================
 
-// 計算移動平均線
+// 計算移動平均線（使用收盤價計算，為技術分析標準做法）
 function calculateMA(data, period) {
     const result = [];
     for (let i = 0; i < data.length; i++) {
@@ -620,10 +620,10 @@ function updateTAChart() {
     const dataToUse = getDisplayData();
     if (dataToUse.length === 0) return;
 
-    // 檢查資料是否包含 OHLC 欄位
-    const hasOHLC = dataToUse[0].Open && dataToUse[0].High && dataToUse[0].Low;
+    // 檢查資料是否包含 OHLC 欄位（驗證所有資料項目）
+    const hasOHLC = dataToUse.every(item => item.Open && item.High && item.Low);
     if (!hasOHLC) {
-        container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#8b92a7;font-family:var(--font-display);font-size:0.85rem;">資料缺少 OHLC 欄位，無法顯示 K 線圖</div>';
+        container.innerHTML = '<div class="ta-chart-empty">資料缺少 OHLC 欄位，無法顯示 K 線圖</div>';
         return;
     }
 

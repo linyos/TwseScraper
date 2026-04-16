@@ -594,6 +594,16 @@ header h1 {
     border: 1px solid rgba(0, 128, 255, 0.6);
 }
 
+.ta-chart-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-secondary);
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+}
+
 /* 資料區域 */
 .data-section {
     background: var(--bg-card);
