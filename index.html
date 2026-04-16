@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+    <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js" defer></script>
 </head>
 <body>
     <div class="grid-overlay"></div>
@@ -98,6 +99,39 @@
             <div class="card-accent"></div>
         </div>
 
+        <div class="chart-section technical-analysis-section glow-card">
+            <div class="section-header">
+                <h2><span class="section-icon">▸</span> 技術面分析</h2>
+                <div class="chart-controls">
+                    <div class="ta-chart-tabs">
+                        <button class="ta-tab active" data-ma="none">K線</button>
+                        <button class="ta-tab" data-ma="ma5">MA5</button>
+                        <button class="ta-tab" data-ma="ma10">MA10</button>
+                        <button class="ta-tab" data-ma="ma20">MA20</button>
+                    </div>
+                    <div class="live-indicator">
+                        <span class="pulse"></span>
+                        <span>LIVE</span>
+                    </div>
+                </div>
+            </div>
+            <div class="ta-chart-wrapper">
+                <div class="ta-chart-container" id="taChartContainer"></div>
+            </div>
+            <div class="ta-legend">
+                <span class="ta-legend-item">
+                    <span class="ta-legend-dot ta-legend-up"></span> 收盤 &gt; 開盤（陽線）
+                </span>
+                <span class="ta-legend-item">
+                    <span class="ta-legend-dot ta-legend-down"></span> 收盤 &lt; 開盤（陰線）
+                </span>
+                <span class="ta-legend-item ta-legend-volume">
+                    <span class="ta-legend-bar"></span> 成交量
+                </span>
+            </div>
+            <div class="card-accent"></div>
+        </div>
+
         <div class="data-section glow-card">
             <div class="section-header">
                 <h2><span class="section-icon">▸</span> 詳細資料</h2>
@@ -119,13 +153,17 @@
                         <tr>
                             <th>日期</th>
                             <th>股票代碼</th>
+                            <th>開盤</th>
+                            <th>最高</th>
+                            <th>最低</th>
                             <th>收盤價</th>
+                            <th>成交量</th>
                             <th>變化</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
                         <tr>
-                            <td colspan="4" class="loading">載入中...</td>
+                            <td colspan="8" class="loading">載入中...</td>
                         </tr>
                     </tbody>
                 </table>
