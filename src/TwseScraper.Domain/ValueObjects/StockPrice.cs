@@ -21,5 +21,16 @@ public sealed record StockPrice
         Value = parsed;
     }
 
+    /// <summary>
+    /// 嘗試建立 StockPrice，若輸入無效（如 "--"）則回傳 null
+    /// </summary>
+    public static StockPrice? TryCreate(string? rawPrice)
+    {
+        if (string.IsNullOrWhiteSpace(rawPrice)) return null;
+        var trimmed = rawPrice.Trim();
+        if (!decimal.TryParse(trimmed, out _)) return null;
+        return new StockPrice(trimmed);
+    }
+
     public override string ToString() => RawValue;
 }

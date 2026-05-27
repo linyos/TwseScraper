@@ -13,7 +13,11 @@ internal class StockPriceDto
 {
     public string? Date { get; set; }
     public string? StockNo { get; set; }
+    public string? Open { get; set; }
+    public string? High { get; set; }
+    public string? Low { get; set; }
     public string? Price { get; set; }
+    public string? Volume { get; set; }
 }
 
 /// <summary>
@@ -46,7 +50,7 @@ public class JsonFileStockPriceRepository : IStockPriceRepository
 
         return dtos
             .Where(d => d.Date != null && d.StockNo != null && d.Price != null)
-            .Select(d => StockPriceRecord.Create(d.Date!, d.StockNo!, d.Price!))
+            .Select(d => StockPriceRecord.Create(d.Date!, d.StockNo!, d.Price!, d.Open, d.High, d.Low, d.Volume))
             .ToList();
     }
 
@@ -62,7 +66,11 @@ public class JsonFileStockPriceRepository : IStockPriceRepository
         {
             Date = r.Date.ToString("yyyy-MM-dd"),
             StockNo = r.StockCode.Value,
-            Price = r.Price.RawValue
+            Open = r.OpenPrice?.RawValue,
+            High = r.HighPrice?.RawValue,
+            Low = r.LowPrice?.RawValue,
+            Price = r.Price.RawValue,
+            Volume = r.Volume?.ToString()
         }).ToList();
 
         string jsonString = JsonSerializer.Serialize(dtos, _jsonOptions);

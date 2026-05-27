@@ -33,7 +33,15 @@ public class ScrapeStockPriceUseCase
         var twTime = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Taipei Standard Time");
         var dateStr = twTime.ToString("yyyy-MM-dd");
 
-        var record = StockPriceRecord.Create(dateStr, stockData.Code, stockData.ClosingPrice);
+        var record = StockPriceRecord.Create(
+            dateStr,
+            stockData.Code,
+            stockData.ClosingPrice,
+            stockData.OpeningPrice,
+            stockData.HighestPrice,
+            stockData.LowestPrice,
+            stockData.TradeVolume
+        );
 
         // 3. 載入既有記錄並追加
         var existingRecords = await _repository.LoadAsync(stockCode, ct);

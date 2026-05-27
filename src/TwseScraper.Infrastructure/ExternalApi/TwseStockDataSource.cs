@@ -20,6 +20,18 @@ internal class TwseApiStockDto
 
     [JsonPropertyName("ClosingPrice")]
     public string? ClosingPrice { get; set; }
+
+    [JsonPropertyName("OpeningPrice")]
+    public string? OpeningPrice { get; set; }
+
+    [JsonPropertyName("HighestPrice")]
+    public string? HighestPrice { get; set; }
+
+    [JsonPropertyName("LowestPrice")]
+    public string? LowestPrice { get; set; }
+
+    [JsonPropertyName("TradeVolume")]
+    public string? TradeVolume { get; set; }
 }
 
 /// <summary>
@@ -51,7 +63,8 @@ public class TwseStockDataSource : IStockDataSource
         if (match?.Code is null || match.Name is null || match.ClosingPrice is null)
             return null;
 
-        return new TwseStockData(match.Code, match.Name, match.ClosingPrice);
+        return new TwseStockData(match.Code, match.Name, match.ClosingPrice,
+            match.OpeningPrice, match.HighestPrice, match.LowestPrice, match.TradeVolume);
     }
 
     private async Task<string> FetchWithRetryAsync(string url, CancellationToken ct)
